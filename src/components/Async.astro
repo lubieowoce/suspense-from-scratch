@@ -1,0 +1,15 @@
+---
+import Albums from "./Albums.astro";
+import Suspense from "./Suspense.astro";
+
+type Props = {
+  content: Promise<string>;
+};
+const { content: contentPromise } = Astro.props;
+const content = await contentPromise;
+---
+
+<span>{content}</span>
+<Suspense>
+  <Albums ms={1000} />
+</Suspense>

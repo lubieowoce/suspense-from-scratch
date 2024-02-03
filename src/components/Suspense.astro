@@ -26,7 +26,8 @@ function wrapPromise(promise: Promise<string>) {
 }
 
 const idx = Astro.locals.suspended.length;
-Astro.locals.suspended.push(wrapPromise(Astro.slots.render("default")));
+console.log("Suspense :: registering promise", idx);
+Astro.locals.suspended.push(Astro.slots.render("default"));
 ---
 
 <div style="display: contents" data-suspense-fallback={idx}>

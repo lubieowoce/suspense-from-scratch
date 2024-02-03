@@ -22,29 +22,42 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
     // https://gist.github.com/lubieowoce/05a4cb2e8cd252787b54b7c8a41f09fc
     const stream = new ReadableStream<{ chunk: string; idx: number }>({
       start(controller) {
-        let remaining = ctx.locals.suspended.length;
-        ctx.locals.suspended.forEach(async (readable, idx) => {
+        const suspended = ctx.locals.suspended;
+
+        let done = 0;
+        const processPromise = async (
+          promise: Promise<string>,
+          idx: number
+        ) => {
+          console.log("middleware :: scheduling promise", idx);
           try {
-            try {
-              const chunk = readable.read();
-              controller.enqueue({ chunk, idx });
-            } catch (e) {
-              if (!(e instanceof Promise)) {
-                throw e;
-              }
-              await e;
-              const chunk = readable.read();
-              controller.enqueue({ chunk, idx });
-            }
+            const chunk = await promise;
+            console.log("middleware :: finished promise", idx);
+            controller.enqueue({ chunk, idx });
           } catch (e) {
             controller.error(e);
             return;
           }
-          remaining--;
-          if (remaining === 0) {
+          done++;
+          if (done >= suspended.length) {
             controller.close();
           }
-        });
+        };
+        suspended.forEach(processPromise);
+
+        // catch promises added after we ran the above.
+        suspended.push = function (...promises) {
+          const oldLength = suspended.length;
+          const ret = Array.prototype.push.call(this, ...promises);
+          for (let idx = oldLength; idx < suspended.length; idx++) {
+            console.log(
+              "middleware :: got a late promise (via patched push)",
+              idx
+            );
+            processPromise(promises[idx], idx);
+          }
+          return ret;
+        };
       },
     });
 

@@ -2,6 +2,15 @@
 import Layout from "../layouts/Layout.astro";
 import Suspense from "../components/Suspense.astro";
 import Albums from "../components/Albums.astro";
+import Async from "../components/Async.astro";
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const content1 = sleep(1000).then(() => "Lorem ipsum");
+const content2 = content1.then((res1) =>
+  sleep(1000).then(() => `${res1}, dolor sit amet`)
+);
+// const content2 = sleep(2000).then(() => Promise.reject(new Error("kaboom")));
 ---
 
 <Layout title="Twitter">
@@ -26,15 +35,28 @@ import Albums from "../components/Albums.astro";
     </nav>
     <main>
       <Suspense>
-        <p slot="fallback">Loading...</p>
+        <p class="border-white text-gray-400" slot="fallback">
+          Loading... (content2, but the fallback suspends)
+          <Async content={content1} />
+        </p>
+        <Async content={content2} />
+      </Suspense>
+      <Suspense>
+        <p class="text-gray-400" slot="fallback">Loading... (albums 1)</p>
         <Albums ms={1000} />
+        <div class="ml-4">
+          <Suspense>
+            <p class="text-gray-400" slot="fallback">Loading some more...</p>
+            <Albums ms={2000} />
+          </Suspense>
+        </div>
       </Suspense>
       <Suspense>
-        <p slot="fallback">Loading...</p>
-        <Albums ms={4000} />
+        <p class="text-gray-400" slot="fallback">Loading... (albums 2)</p>
+        <Albums ms={3000} />
       </Suspense>
       <Suspense>
-        <p slot="fallback">Loading...</p>
+        <p class="text-gray-400" slot="fallback">Loading... (albums 3)</p>
         <Albums ms={2000} />
       </Suspense>
     </main>
